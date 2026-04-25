@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERI Live Monitor — Inter-Story Drift</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#faf9f7;--surface:#fff;--surface2:#f4f2ef;--surface3:#ebe7e1;
+  --border:#ddd8d0;--border2:#c8c1b6;
+  --orange:#c94a00;--orange2:#e05510;--orange-dim:rgba(201,74,0,0.07);
+  --orange-glow:rgba(201,74,0,0.15);--orange-b:rgba(201,74,0,0.22);
+  --red:#b91c1c;--red-dim:rgba(185,28,28,0.08);
+  --green:#166534;--green-dim:rgba(22,101,52,0.08);--green-b:rgba(22,101,52,0.25);
+  --amber:#92400e;--amber-dim:rgba(146,64,14,0.07);
+  --blue:#1d4ed8;--blue-dim:rgba(29,78,216,0.07);
+  --purple:#6d28d9;--purple-dim:rgba(109,40,217,0.07);
+  --text:#141210;--text2:#3d3730;--text3:#7a6f63;--text4:#a89f96;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',system-ui,sans-serif;
+  --serif:'Source Serif 4',Georgia,serif;
+  --r:4px;--r2:8px;
+  --shadow:0 1px 3px rgba(0,0,0,0.07),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,0.08);
+}
+html,body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
+.page{max-width:1240px;margin:0 auto;padding:20px 20px 48px}
+
+/* ── TOPBAR ── */
+.topbar{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;
+  padding-bottom:16px;border-bottom:2px solid var(--orange);margin-bottom:20px}
+.topbar-logo{width:46px;height:46px;background:var(--orange);border-radius:var(--r2);
+  display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-md)}
+.topbar-logo svg{width:26px;height:26px}
+.topbar-title{font-family:var(--serif);font-size:16px;font-weight:600;color:var(--orange)}
+.topbar-sub{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:3px;letter-spacing:.04em}
+.topbar-right{display:flex;gap:8px;align-items:center}
+.conn-badge{display:flex;align-items:center;gap:6px;font-size:11px;font-family:var(--mono);
+  padding:4px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--surface2)}
+.conn-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:background .3s}
+.conn-dot.disconnected{background:#bbb}
+.conn-dot.connecting{background:var(--amber);animation:blink .8s infinite}
+.conn-dot.connected{background:var(--green);box-shadow:0 0 0 3px rgba(22,101,52,.2)}
+.conn-dot.error{background:var(--red)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.last-rx{font-size:10px;color:var(--text4);font-family:var(--mono)}
+
+/* ── CONN FORM ── */
+.conn-panel{background:var(--surface);border:1px solid var(--border);
+  border-left:3px solid var(--orange);border-radius:0 var(--r2) var(--r2) 0;
+  padding:14px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.cp-title{font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.08em;
+  text-transform:uppercase;margin-bottom:10px}
+.conn-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:8px;align-items:end}
+.cf{display:flex;flex-direction:column;gap:4px}
+.cf label{font-size:10px;font-family:var(--mono);color:var(--text3);letter-spacing:.04em;text-transform:uppercase}
+.cf input{background:#fff;border:1px solid var(--border2);border-radius:var(--r);
+  color:var(--text);font-size:12px;font-family:var(--mono);padding:6px 10px;outline:none;
+  transition:border-color .15s;width:100%}
+.cf input:focus{border-color:var(--orange);box-shadow:0 0 0 2px var(--orange-glow)}
+.btn-c{border:none;border-radius:var(--r);padding:8px 18px;font-size:12px;font-weight:500;
+  font-family:var(--sans);cursor:pointer;letter-spacing:.02em;transition:all .15s;white-space:nowrap}
+.btn-connect{background:var(--orange);color:#fff}
+.btn-connect:hover{background:var(--orange2);box-shadow:0 2px 10px var(--orange-glow)}
+.btn-clear{background:var(--surface2);color:var(--text2);border:1px solid var(--border2)}
+.btn-clear:hover{background:var(--surface3)}
+.conn-hint{font-size:10px;color:var(--text4);font-family:var(--mono);margin-top:8px}
+
+/* ── DEVICE STATUS BAR ── */
+.device-bar{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.dev-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);
+  padding:12px 14px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px}
+.dev-icon{width:36px;height:36px;border-radius:var(--r);display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;font-size:14px;font-weight:600;font-family:var(--mono)}
+.dev-icon.ground{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(29,78,216,.2)}
+.dev-icon.top{background:var(--orange-dim);color:var(--orange);border:1px solid var(--orange-b)}
+.dev-info{flex:1}
+.dev-name{font-size:12px;font-weight:500;color:var(--text);margin-bottom:2px}
+.dev-sub{font-size:10px;color:var(--text3);font-family:var(--mono)}
+.dev-stats{display:flex;gap:10px;flex-shrink:0}
+.ds{text-align:right}
+.ds-val{font-size:14px;font-family:var(--mono);font-weight:300;color:var(--text)}
+.ds-label{font-size:9px;color:var(--text4);font-family:var(--mono);letter-spacing:.05em;text-transform:uppercase}
+.dev-dot{width:8px;height:8px;border-radius:50%;background:#bbb;flex-shrink:0;align-self:center}
+.dev-dot.live{background:var(--green);animation:blink .8s infinite}
+
+/* ── RELATIVE DISP HERO ── */
+.hero{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--orange);
+  border-radius:0 0 var(--r2) var(--r2);padding:16px 20px;margin-bottom:14px;
+  display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:0;box-shadow:var(--shadow)}
+.hero-col{padding:0 16px;border-right:1px solid var(--border)}
+.hero-col:first-child{padding-left:0}
+.hero-col:last-child{border-right:none;padding-right:0}
+.hero-label{font-size:9px;font-family:var(--mono);color:var(--text3);letter-spacing:.07em;
+  text-transform:uppercase;margin-bottom:4px}
+.hero-val{font-size:26px;font-weight:300;font-family:var(--mono);color:var(--orange);line-height:1;
+  transition:color .3s}
+.hero-val.alert{color:var(--red)}
+.hero-val.ok{color:var(--green)}
+.hero-unit{font-size:10px;color:var(--text4);font-family:var(--mono);margin-top:3px}
+.hero-drift{display:flex;flex-direction:column;justify-content:center;padding-left:16px}
+.drift-label{font-size:9px;font-family:var(--mono);color:var(--text3);letter-spacing:.07em;
+  text-transform:uppercase;margin-bottom:6px}
+.drift-bar-wrap{width:120px;height:8px;background:var(--surface3);border-radius:4px;overflow:hidden}
+.drift-bar{height:100%;background:var(--green);border-radius:4px;width:0%;transition:width .4s,background .3s}
+.drift-bar.warn{background:var(--amber)}
+.drift-bar.danger{background:var(--red)}
+.drift-pct{font-size:10px;font-family:var(--mono);color:var(--text3);margin-top:4px}
+
+/* ── MAIN GRID ── */
+.main-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.main-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);
+  border-left:3px solid var(--orange);border-radius:0 var(--r2) var(--r2) 0;
+  padding:12px 14px;box-shadow:var(--shadow)}
+.card.rel{border-left-color:var(--purple)}
+.card.ground-card{border-left-color:var(--blue)}
+.card.top-card{border-left-color:var(--orange)}
+.card-title{font-size:11px;font-weight:500;color:var(--text2);margin-bottom:2px}
+.card-sub{font-size:10px;color:var(--text4);font-family:var(--mono);margin-bottom:10px}
+.chart-wrap{position:relative}
+.atabs{display:flex;gap:3px;margin-bottom:8px}
+.atab{padding:3px 10px;border-radius:3px;font-size:10px;font-family:var(--mono);cursor:pointer;
+  color:var(--text3);border:1px solid var(--border);background:var(--surface2);
+  transition:all .15s;letter-spacing:.04em}
+.atab:hover{color:var(--text2)}
+.atab.active{background:var(--orange);color:#fff;border-color:var(--orange)}
+.atab.active.rel{background:var(--purple);border-color:var(--purple)}
+
+/* ── TABLE ── */
+.ptable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;margin-top:4px}
+.ptable th{background:var(--orange);color:#fff;padding:6px 10px;text-align:left;
+  font-size:9px;letter-spacing:.07em;text-transform:uppercase;font-weight:500}
+.ptable td{padding:5px 10px;border-bottom:1px solid var(--border);color:var(--text2)}
+.ptable tr:last-child td{border-bottom:none}
+.ptable tr:nth-child(even) td{background:var(--surface2)}
+.ptable td.num{color:var(--orange);font-weight:500}
+.ptable td.hi{color:var(--red);font-weight:500}
+.ptable td.ok{color:var(--green)}
+.empty td{text-align:center;color:var(--text4);padding:18px;font-style:italic}
+
+/* ── LOG ── */
+.log-wrap{height:130px;overflow-y:auto;background:var(--surface2);border-radius:var(--r);
+  border:1px solid var(--border);padding:8px 10px}
+.le{font-size:10px;font-family:var(--mono);color:var(--text3);line-height:1.65;
+  border-bottom:1px solid var(--border);padding-bottom:2px;margin-bottom:2px}
+.le:last-child{border:none;margin:0}
+.le .lt{color:var(--text4);margin-right:8px}
+.le.err .lm{color:var(--red)}
+.le.ok .lm{color:var(--green)}
+.le.warn .lm{color:var(--amber)}
+.le.ground .lt{color:var(--blue)}
+.le.top .lt{color:var(--orange)}
+
+/* ── LEGEND ── */
+.leg-row{display:flex;gap:12px;margin-top:8px;padding-top:6px;border-top:1px solid var(--border);flex-wrap:wrap}
+.leg{display:flex;align-items:center;gap:5px;font-size:9px;font-family:var(--mono);color:var(--text3)}
+.leg-line{width:14px;height:2px;border-radius:1px}
+.leg-dash{width:14px;height:0;border-top:2px dashed}
+
+/* ── FOOTER ── */
+.footer{margin-top:28px;padding-top:14px;border-top:1px solid var(--border);text-align:center}
+.footer p{font-size:10px;color:var(--text4);font-family:var(--mono);letter-spacing:.04em;margin-bottom:2px}
+
+/* ── ALERT ── */
+.alert-bar{display:none;border-radius:var(--r);padding:8px 14px;font-size:12px;
+  font-family:var(--mono);margin-bottom:12px}
+.alert-bar.show.err{display:block;background:var(--red-dim);color:var(--red);
+  border:1px solid rgba(185,28,28,.25)}
+.alert-bar.show.warn{display:block;background:var(--amber-dim);color:var(--amber);
+  border:1px solid rgba(146,64,14,.2)}
+.alert-bar.show.hi{display:block;background:var(--orange-dim);color:var(--orange);
+  border:1px solid var(--orange-b);font-size:13px;font-weight:500}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round">
+      <polyline points="2,12 6,6 9,15 12,4 15,18 18,8 22,12"/>
+    </svg>
+  </div>
+  <div>
+    <div class="topbar-title">ERI Live Monitor — Inter-Story Drift</div>
+    <div class="topbar-sub">ADXL355 · ESP32-WROOM32 × 2 · GROUND ↔ TOP FLOOR · CTU DEPT. OF ELECTRONICS ENGINEERING</div>
+  </div>
+  <div class="topbar-right">
+    <div class="conn-badge"><div class="conn-dot disconnected" id="cdot"></div><span id="clabel">Disconnected</span></div>
+    <div class="last-rx" id="last-rx">—</div>
+  </div>
+</div>
+
+<!-- ── ALERT BAR ── -->
+<div class="alert-bar" id="alert-bar"></div>
+
+<!-- ── CONNECTION FORM ── -->
+<div class="conn-panel">
+  <div class="cp-title">HiveMQ Cloud connection</div>
+  <div class="conn-grid">
+    <div class="cf"><label>Broker Host</label><input id="cfg-host" placeholder="abc123.s1.eu.hivemq.cloud"></div>
+    <div class="cf"><label>WSS Port</label><input type="number" id="cfg-port" value="8884"></div>
+    <div class="cf"><label>Username</label><input id="cfg-user"></div>
+    <div class="cf"><label>Password</label><input type="password" id="cfg-pass"></div>
+    <div class="cf"><label>Topic prefix</label><input id="cfg-topic" value="eri"></div>
+  </div>
+  <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+    <button class="btn-c btn-connect" id="btn-conn" onclick="toggleConnect()">Connect</button>
+    <button class="btn-c btn-clear" onclick="clearHistory()">Clear history</button>
+    <span style="font-size:10px;color:var(--text4);font-family:var(--mono);margin-left:4px">
+      Port 8884 = WebSocket TLS · ESP32 uses 8883 = MQTT TLS
+    </span>
+  </div>
+  <div class="conn-hint">
+    Host → HiveMQ Console → Cluster → Overview · Credentials → Access Management → Credentials
+  </div>
+</div>
+
+<!-- ── DEVICE STATUS ── -->
+<div class="device-bar">
+  <div class="dev-card">
+    <div class="dev-icon ground">GND</div>
+    <div class="dev-info">
+      <div class="dev-name">Ground Floor — Reference unit</div>
+      <div class="dev-sub" id="gnd-sub">No data received</div>
+    </div>
+    <div class="dev-stats">
+      <div class="ds"><div class="ds-val" id="gnd-dx">—</div><div class="ds-label">dx (mm)</div></div>
+      <div class="ds"><div class="ds-val" id="gnd-dy">—</div><div class="ds-label">dy (mm)</div></div>
+      <div class="ds"><div class="ds-val" id="gnd-dz">—</div><div class="ds-label">dz (mm)</div></div>
+    </div>
+    <div class="dev-dot" id="gnd-dot"></div>
+  </div>
+  <div class="dev-card">
+    <div class="dev-icon top">TOP</div>
+    <div class="dev-info">
+      <div class="dev-name">Top Floor — Measurement unit</div>
+      <div class="dev-sub" id="top-sub">No data received</div>
+    </div>
+    <div class="dev-stats">
+      <div class="ds"><div class="ds-val" id="top-dx">—</div><div class="ds-label">dx (mm)</div></div>
+      <div class="ds"><div class="ds-val" id="top-dy">—</div><div class="ds-label">dy (mm)</div></div>
+      <div class="ds"><div class="ds-val" id="top-dz">—</div><div class="ds-label">dz (mm)</div></div>
+    </div>
+    <div class="dev-dot" id="top-dot"></div>
+  </div>
+</div>
+
+<!-- ── RELATIVE DISPLACEMENT HERO ── -->
+<div class="hero">
+  <div class="hero-col">
+    <div class="hero-label">Rel. Disp. X</div>
+    <div class="hero-val" id="h-rx">—</div>
+    <div class="hero-unit">mm  (top − ground)</div>
+  </div>
+  <div class="hero-col">
+    <div class="hero-label">Rel. Disp. Y</div>
+    <div class="hero-val" id="h-ry">—</div>
+    <div class="hero-unit">mm</div>
+  </div>
+  <div class="hero-col">
+    <div class="hero-label">Rel. Disp. Z</div>
+    <div class="hero-val" id="h-rz">—</div>
+    <div class="hero-unit">mm</div>
+  </div>
+  <div class="hero-col">
+    <div class="hero-label">Resultant Drift</div>
+    <div class="hero-val" id="h-rr">—</div>
+    <div class="hero-unit">mm  vector magnitude</div>
+  </div>
+  <div class="hero-drift">
+    <div class="drift-label">Drift severity</div>
+    <div class="drift-bar-wrap"><div class="drift-bar" id="drift-bar"></div></div>
+    <div class="drift-pct" id="drift-pct">— mm</div>
+  </div>
+</div>
+
+<!-- ── RELATIVE DISPLACEMENT CHART ── -->
+<div class="card rel" style="margin-bottom:12px">
+  <div class="card-title">Live relative displacement — top floor relative to ground floor</div>
+  <div class="card-sub">d_rel = d_top − d_ground · displayed in mm · updated at ~10 Hz</div>
+  <div class="atabs">
+    <div class="atab active rel" onclick="setRelAxis('xyz',this)">X Y Z</div>
+    <div class="atab" onclick="setRelAxis('x',this)">X</div>
+    <div class="atab" onclick="setRelAxis('y',this)">Y</div>
+    <div class="atab" onclick="setRelAxis('z',this)">Z</div>
+    <div class="atab" onclick="setRelAxis('r',this)">Resultant</div>
+  </div>
+  <div class="chart-wrap" style="height:200px"><canvas id="ch-rel"></canvas></div>
+  <div class="leg-row">
+    <div class="leg"><div class="leg-line" style="background:rgba(109,40,217,.85)"></div>X relative</div>
+    <div class="leg"><div class="leg-line" style="background:rgba(29,78,216,.85)"></div>Y relative</div>
+    <div class="leg"><div class="leg-line" style="background:rgba(22,101,52,.85)"></div>Z relative</div>
+    <div class="leg"><div class="leg-dash" style="border-color:rgba(201,74,0,.6)"></div>Resultant</div>
+  </div>
+</div>
+
+<!-- ── PER-FLOOR ACCEL CHARTS ── -->
+<div class="main-grid">
+  <div class="card ground-card">
+    <div class="card-title">Ground floor — calibrated acceleration</div>
+    <div class="card-sub" id="gnd-accel-sub">Waiting…</div>
+    <div class="chart-wrap" style="height:160px"><canvas id="ch-gnd-a"></canvas></div>
+  </div>
+  <div class="card top-card">
+    <div class="card-title">Top floor — calibrated acceleration</div>
+    <div class="card-sub" id="top-accel-sub">Waiting…</div>
+    <div class="chart-wrap" style="height:160px"><canvas id="ch-top-a"></canvas></div>
+  </div>
+</div>
+
+<!-- ── PER-FLOOR DISPLACEMENT CHARTS ── -->
+<div class="main-grid">
+  <div class="card ground-card">
+    <div class="card-title">Ground floor — displacement (absolute)</div>
+    <div class="card-sub" id="gnd-disp-sub">Waiting…</div>
+    <div class="chart-wrap" style="height:160px"><canvas id="ch-gnd-d"></canvas></div>
+  </div>
+  <div class="card top-card">
+    <div class="card-title">Top floor — displacement (absolute)</div>
+    <div class="card-sub" id="top-disp-sub">Waiting…</div>
+    <div class="chart-wrap" style="height:160px"><canvas id="ch-top-d"></canvas></div>
+  </div>
+</div>
+
+<!-- ── WINDOW PEAKS + LOG ── -->
+<div class="main-grid">
+  <div class="card">
+    <div class="card-title">Inter-story drift — window peaks log</div>
+    <div class="card-sub">Relative PGD per completed 60-second window</div>
+    <div style="overflow-x:auto">
+      <table class="ptable">
+        <thead>
+          <tr>
+            <th>#Win</th><th>Rel.PGD X (mm)</th><th>Rel.PGD Y</th>
+            <th>Rel.PGD Z</th><th>Resultant (mm)</th><th>GND PGD r</th><th>TOP PGD r</th>
+          </tr>
+        </thead>
+        <tbody id="peaks-body">
+          <tr class="empty"><td colspan="7">Waiting for both floors to report a completed window…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">MQTT event log</div>
+    <div class="card-sub">Ground = blue timestamp · Top = orange timestamp</div>
+    <div class="log-wrap" id="log-wrap"></div>
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<footer style="display:none">
+<div class="footer">
+  <p>ERI LIVE MONITOR · INTER-STORY DRIFT · ADXL355 + ESP32-WROOM32 × 2 · HIVEMQ CLOUD</p>
+  <p>Cebu Technological University · Department of Electronics Engineering</p>
+</div>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+const MAX_PTS  = 300;   // ~30 s at 10 Hz
+const MAX_ROWS = 40;
+
+let mqttClient  = null;
+let connState   = 'disconnected';
+let msgCount    = 0, msgCountPrev = 0;
+let relAxis     = 'xyz';
+
+// Per-floor buffers
+const F = {
+  ground: { ax:[], ay:[], az:[], dx:[], dy:[], dz:[], last: null, rxCount:0 },
+  top:    { ax:[], ay:[], az:[], dx:[], dy:[], dz:[], last: null, rxCount:0 }
+};
+
+// Relative displacement rolling buffers (mm)
+const R = { x:[], y:[], z:[], r:[] };
+
+// Window peaks (one entry per window, matching ground+top pair)
+const windowBuf = { ground:{}, top:{} };
+const peaksLog  = [];
+
+
+// ══════════════════════════════════════════════
+//  MQTT
+// ══════════════════════════════════════════════
+function toggleConnect() {
+  if (mqttClient && connState === 'connected') {
+    mqttClient.end(true);
+    setConnState('disconnected');
+    addLog('Disconnected by user.', 'warn', '');
+    document.getElementById('btn-conn').textContent = 'Connect';
+    return;
+  }
+  connectMQTT();
+}
+
+function connectMQTT() {
+  const host  = document.getElementById('cfg-host').value.trim();
+  const port  = parseInt(document.getElementById('cfg-port').value) || 8884;
+  const user  = document.getElementById('cfg-user').value.trim();
+  const pass  = document.getElementById('cfg-pass').value;
+  const pfx   = document.getElementById('cfg-topic').value.trim() || 'eri';
+
+  if (!host) { showAlert('Enter the HiveMQ broker host.', 'err'); return; }
+  setConnState('connecting');
+  document.getElementById('btn-conn').textContent = 'Connecting…';
+  addLog('Connecting to wss://' + host + ':' + port, 'info', '');
+
+  const url  = 'wss://' + host + ':' + port + '/mqtt';
+  const opts = {
+    clientId: 'eri-web-' + Math.random().toString(16).slice(2,8),
+    username: user || undefined, password: pass || undefined,
+    clean: true, reconnectPeriod: 5000, connectTimeout: 10000
+  };
+
+  if (mqttClient) { try { mqttClient.end(true); } catch(e){} }
+  mqttClient = mqtt.connect(url, opts);
+
+  mqttClient.on('connect', () => {
+    setConnState('connected');
+    document.getElementById('btn-conn').textContent = 'Disconnect';
+    addLog('Connected.', 'ok', '');
+    hideAlert();
+
+    // Subscribe to both floor topics
+    const topics = [
+      pfx+'/ground/live', pfx+'/ground/window', pfx+'/ground/status',
+      pfx+'/top/live',    pfx+'/top/window',    pfx+'/top/status'
+    ];
+    topics.forEach(t => mqttClient.subscribe(t, {qos:0}, err => {
+      if (!err) addLog('↳ subscribed: '+t, 'ok', '');
+      else addLog('Subscribe failed: '+t, 'err', '');
+    }));
+  });
+
+  mqttClient.on('error',     e  => { setConnState('error'); addLog('Error: '+e.message,'err',''); showAlert(e.message,'err'); document.getElementById('btn-conn').textContent='Connect'; });
+  mqttClient.on('close',     ()  => { if(connState!=='disconnected'){ setConnState('disconnected'); addLog('Connection closed.','warn',''); document.getElementById('btn-conn').textContent='Connect'; }});
+  mqttClient.on('reconnect', ()  => { setConnState('connecting'); addLog('Reconnecting…','warn',''); });
+
+  mqttClient.on('message', (topic, payload) => {
+    msgCount++;
+    document.getElementById('last-rx').textContent =
+      'Last: ' + new Date().toLocaleTimeString();
+    try {
+      const d = JSON.parse(payload.toString());
+      // Determine floor from topic path
+      const floor = topic.includes('/ground/') ? 'ground' : 'top';
+      const type  = topic.split('/').pop();
+      if      (type === 'live')   handleLive(floor, d);
+      else if (type === 'window') handleWindow(floor, d);
+      else if (type === 'status') addLog('[ESP32/'+floor.toUpperCase()+'] '+(d.msg||'heartbeat'), 'info', floor);
+    } catch(e) { addLog('Parse error: '+e.message, 'err', ''); }
+  });
+}
+
+
+// ══════════════════════════════════════════════
+//  DATA HANDLERS
+// ══════════════════════════════════════════════
+function push(arr, val) {
+  arr.push(val);
+  if (arr.length > MAX_PTS) arr.shift();
+}
+
+function handleLive(floor, d) {
+  const f = F[floor];
+  f.rxCount++;
+  f.last = d;
+
+  push(f.ax, d.ax_cal ?? 0);
+  push(f.ay, d.ay_cal ?? 0);
+  push(f.az, d.az_cal ?? 0);
+  push(f.dx, (d.dx ?? 0) * 1000);   // m → mm
+  push(f.dy, (d.dy ?? 0) * 1000);
+  push(f.dz, (d.dz ?? 0) * 1000);
+
+  // Flash device dot
+  const dot = document.getElementById(floor === 'ground' ? 'gnd-dot' : 'top-dot');
+  dot.className = 'dev-dot live';
+  clearTimeout(dot._t);
+  dot._t = setTimeout(() => { dot.className = 'dev-dot'; }, 2000);
+
+  // Update device sub-labels
+  const sub = document.getElementById(floor === 'ground' ? 'gnd-sub' : 'top-sub');
+  sub.textContent = 'ax=' + (d.ax_cal??0).toFixed(4) + '  dx=' + ((d.dx??0)*1000).toFixed(4) + ' mm  n='+f.rxCount;
+  const dxEl = document.getElementById(floor === 'ground' ? 'gnd-dx' : 'top-dx');
+  const dyEl = document.getElementById(floor === 'ground' ? 'gnd-dy' : 'top-dy');
+  const dzEl = document.getElementById(floor === 'ground' ? 'gnd-dz' : 'top-dz');
+  dxEl.textContent = ((d.dx??0)*1000).toFixed(3);
+  dyEl.textContent = ((d.dy??0)*1000).toFixed(3);
+  dzEl.textContent = ((d.dz??0)*1000).toFixed(3);
+
+  // Compute relative displacement if both floors have recent data
+  if (F.ground.last && F.top.last) {
+    const rx = (F.top.last.dx - F.ground.last.dx) * 1000;
+    const ry = (F.top.last.dy - F.ground.last.dy) * 1000;
+    const rz = (F.top.last.dz - F.ground.last.dz) * 1000;
+    const rr = Math.sqrt(rx*rx + ry*ry + rz*rz);
+    push(R.x, rx); push(R.y, ry); push(R.z, rz); push(R.r, rr);
+    updateHero(rx, ry, rz, rr);
+    updateRelChart();
+    checkDriftAlert(rr);
+  }
+
+  updateFloorCharts(floor);
+}
+
+function handleWindow(floor, d) {
+  windowBuf[floor][d.win] = d;
+  addLog('Window #'+d.win+' ['+floor.toUpperCase()+'] PGD='+
+    (d.pgd_r*1000).toFixed(3)+'mm', 'ok', floor);
+
+  // Pair windows: emit to table if both floors have reported this window
+  const win = d.win;
+  if (windowBuf.ground[win] && windowBuf.top[win]) {
+    const g = windowBuf.ground[win];
+    const t = windowBuf.top[win];
+    const rn = Math.min(g.n, t.n);
+    const relX = Math.abs(t.pgd_x - g.pgd_x) * 1000;
+    const relY = Math.abs(t.pgd_y - g.pgd_y) * 1000;
+    const relZ = Math.abs(t.pgd_z - g.pgd_z) * 1000;
+    const relR = Math.sqrt(relX*relX + relY*relY + relZ*relZ);
+    peaksLog.unshift({win, relX, relY, relZ, relR,
+      gndPgd: g.pgd_r*1000, topPgd: t.pgd_r*1000});
+    if (peaksLog.length > MAX_ROWS) peaksLog.pop();
+    renderPeaksTable();
+    delete windowBuf.ground[win];
+    delete windowBuf.top[win];
+  }
+}
+
+
+// ══════════════════════════════════════════════
+//  HERO PANEL
+// ══════════════════════════════════════════════
+function updateHero(rx, ry, rz, rr) {
+  setHeroVal('h-rx', rx.toFixed(4), rr);
+  setHeroVal('h-ry', ry.toFixed(4), rr);
+  setHeroVal('h-rz', rz.toFixed(4), rr);
+  setHeroVal('h-rr', rr.toFixed(4), rr);
+
+  // Drift severity bar (0–10 mm range)
+  const pct = Math.min(100, (rr / 10) * 100);
+  const bar = document.getElementById('drift-bar');
+  bar.style.width = pct + '%';
+  bar.className = 'drift-bar' + (pct > 80 ? ' danger' : pct > 50 ? ' warn' : '');
+  document.getElementById('drift-pct').textContent = rr.toFixed(4) + ' mm';
+}
+
+function setHeroVal(id, val, rr) {
+  const el = document.getElementById(id);
+  el.textContent = val;
+  el.className = 'hero-val' + (rr > 5 ? ' alert' : rr < 1 ? ' ok' : '');
+}
+
+function checkDriftAlert(rr) {
+  if (rr > 10) {
+    showAlert('⚠  High inter-story drift detected: ' + rr.toFixed(3) + ' mm — verify structural condition.', 'hi');
+  } else {
+    hideAlert();
+  }
+}
+
+
+// ══════════════════════════════════════════════
+//  CHARTS
+// ══════════════════════════════════════════════
+let charts = {};
+
+function ds(data, color, dash) {
+  return { data, borderColor: color, borderWidth: 1.2, pointRadius: 0,
+    fill: false, tension: 0.3, borderDash: dash || [] };
+}
+
+function scaleOpts(yLabel) {
+  return {
+    x: { display:false, grid:{ color:'rgba(0,0,0,0.04)' }},
+    y: { title:{ display:true, text:yLabel, font:{size:9,family:'IBM Plex Mono'}, color:'#7a6f63' },
+         grid:{ color:'rgba(0,0,0,0.05)' },
+         ticks:{ color:'#7a6f63', font:{size:9,family:'IBM Plex Mono'} }}
+  };
+}
+
+function mkChart(id, yLabel, datasets) {
+  const ctx = document.getElementById(id).getContext('2d');
+  const c = new Chart(ctx, {
+    type:'line', data:{ labels:[], datasets },
+    options:{ responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{ legend:{ display:false }}, scales:scaleOpts(yLabel) }
+  });
+  charts[id] = c;
+  return c;
+}
+
+function initCharts() {
+  mkChart('ch-rel', 'mm', [
+    ds([], 'rgba(109,40,217,.85)'),   // X relative
+    ds([], 'rgba(29,78,216,.85)'),    // Y relative
+    ds([], 'rgba(22,101,52,.85)'),    // Z relative
+    ds([], 'rgba(201,74,0,.6)', [4,4]) // resultant
+  ]);
+  mkChart('ch-gnd-a', 'm/s²', [
+    ds([], 'rgba(29,78,216,.8)'),
+    ds([], 'rgba(22,101,52,.7)'),
+    ds([], 'rgba(201,74,0,.7)')
+  ]);
+  mkChart('ch-top-a', 'm/s²', [
+    ds([], 'rgba(201,74,0,.85)'),
+    ds([], 'rgba(29,78,216,.7)'),
+    ds([], 'rgba(22,101,52,.7)')
+  ]);
+  mkChart('ch-gnd-d', 'mm', [
+    ds([], 'rgba(29,78,216,.8)'),
+    ds([], 'rgba(22,101,52,.7)'),
+    ds([], 'rgba(201,74,0,.7)')
+  ]);
+  mkChart('ch-top-d', 'mm', [
+    ds([], 'rgba(201,74,0,.85)'),
+    ds([], 'rgba(29,78,216,.7)'),
+    ds([], 'rgba(22,101,52,.7)')
+  ]);
+}
+
+function setChartData(id, setsData) {
+  const c = charts[id];
+  if (!c) return;
+  const maxLen = Math.max(...setsData.map(d => d.length));
+  c.data.labels = Array.from({length: maxLen}, (_, i) => i);
+  setsData.forEach((d, i) => { c.data.datasets[i].data = d; });
+  c.update('none');
+}
+
+function updateRelChart() {
+  const none = [];
+  if (relAxis === 'x')   setChartData('ch-rel', [R.x, none, none, none]);
+  else if (relAxis === 'y') setChartData('ch-rel', [none, R.y, none, none]);
+  else if (relAxis === 'z') setChartData('ch-rel', [none, none, R.z, none]);
+  else if (relAxis === 'r') setChartData('ch-rel', [none, none, none, R.r]);
+  else setChartData('ch-rel', [R.x, R.y, R.z, R.r]);
+}
+
+function updateFloorCharts(floor) {
+  const f = F[floor];
+  if (floor === 'ground') {
+    setChartData('ch-gnd-a', [f.ax, f.ay, f.az]);
+    setChartData('ch-gnd-d', [f.dx, f.dy, f.dz]);
+    document.getElementById('gnd-accel-sub').textContent =
+      'ax=' + (f.ax.at(-1)??0).toFixed(5) + '  ay=' + (f.ay.at(-1)??0).toFixed(5) + ' m/s²';
+    document.getElementById('gnd-disp-sub').textContent =
+      'dx=' + (f.dx.at(-1)??0).toFixed(5) + '  dy=' + (f.dy.at(-1)??0).toFixed(5) + ' mm';
+  } else {
+    setChartData('ch-top-a', [f.ax, f.ay, f.az]);
+    setChartData('ch-top-d', [f.dx, f.dy, f.dz]);
+    document.getElementById('top-accel-sub').textContent =
+      'ax=' + (f.ax.at(-1)??0).toFixed(5) + '  ay=' + (f.ay.at(-1)??0).toFixed(5) + ' m/s²';
+    document.getElementById('top-disp-sub').textContent =
+      'dx=' + (f.dx.at(-1)??0).toFixed(5) + '  dy=' + (f.dy.at(-1)??0).toFixed(5) + ' mm';
+  }
+}
+
+function setRelAxis(ax, el) {
+  relAxis = ax;
+  el.closest('.card').querySelectorAll('.atab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active', 'rel');
+  updateRelChart();
+}
+
+
+// ══════════════════════════════════════════════
+//  PEAKS TABLE
+// ══════════════════════════════════════════════
+function renderPeaksTable() {
+  const tbody = document.getElementById('peaks-body');
+  if (!peaksLog.length) {
+    tbody.innerHTML = '<tr class="empty"><td colspan="7">Waiting for both floors…</td></tr>';
+    return;
+  }
+  tbody.innerHTML = peaksLog.map(p => {
+    const hi = p.relR > 5;
+    return `<tr>
+      <td class="num">#${p.win}</td>
+      <td class="${hi?'hi':''}">${p.relX.toFixed(4)}</td>
+      <td class="${hi?'hi':''}">${p.relY.toFixed(4)}</td>
+      <td class="${hi?'hi':''}">${p.relZ.toFixed(4)}</td>
+      <td class="${hi?'hi':'ok'}">${p.relR.toFixed(4)}</td>
+      <td>${p.gndPgd.toFixed(4)}</td>
+      <td>${p.topPgd.toFixed(4)}</td>
+    </tr>`;
+  }).join('');
+}
+
+
+// ══════════════════════════════════════════════
+//  UI HELPERS
+// ══════════════════════════════════════════════
+function setConnState(s) {
+  connState = s;
+  document.getElementById('cdot').className = 'conn-dot ' + s;
+  document.getElementById('clabel').textContent = s.charAt(0).toUpperCase() + s.slice(1);
+}
+function showAlert(msg, type) {
+  const el = document.getElementById('alert-bar');
+  el.textContent = msg;
+  el.className = 'alert-bar show ' + type;
+}
+function hideAlert() { document.getElementById('alert-bar').className = 'alert-bar'; }
+
+function addLog(msg, type, floor) {
+  const wrap = document.getElementById('log-wrap');
+  const ts   = new Date().toLocaleTimeString('en', {hour12:false});
+  const div  = document.createElement('div');
+  div.className = 'le' + (type==='err'?' err':type==='ok'?' ok':type==='warn'?' warn':'') +
+                  (floor===' ground'?' ground':floor==='top'?' top':'');
+  div.innerHTML = `<span class="lt">${ts}</span><span class="lm">${msg}</span>`;
+  wrap.prepend(div);
+  while (wrap.children.length > 80) wrap.removeChild(wrap.lastChild);
+}
+
+function clearHistory() {
+  ['ground','top'].forEach(f => {
+    F[f].ax=[]; F[f].ay=[]; F[f].az=[];
+    F[f].dx=[]; F[f].dy=[]; F[f].dz=[];
+    F[f].last=null; F[f].rxCount=0;
+  });
+  R.x=[]; R.y=[]; R.z=[]; R.r=[];
+  peaksLog.length = 0;
+  renderPeaksTable();
+  Object.values(charts).forEach(c => { c.data.labels=[]; c.data.datasets.forEach(d=>d.data=[]); c.update('none'); });
+  ['h-rx','h-ry','h-rz','h-rr'].forEach(id => document.getElementById(id).textContent = '—');
+  document.getElementById('drift-bar').style.width = '0%';
+  document.getElementById('drift-pct').textContent = '— mm';
+  document.getElementById('log-wrap').innerHTML = '';
+  addLog('History cleared.', 'warn', '');
+}
+
+// Msg rate
+setInterval(() => {
+  const rate = ((msgCount - msgCountPrev) / 2).toFixed(1);
+  msgCountPrev = msgCount;
+}, 2000);
+
+document.addEventListener('DOMContentLoaded', () => {
+  initCharts();
+  addLog('Dashboard ready. Connect to HiveMQ to begin.', 'info', '');
+  renderPeaksTable();
+});
+</script>
+</body>
+</html>
