@@ -136,6 +136,14 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);min-hei
 .buf-bar{height:100%;background:var(--green);width:0%;transition:width .5s;border-radius:2px}
 .buf-bar.warn{background:var(--amber)}
 
+/* Chart legend */
+.chart-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;padding-top:7px;
+  border-top:1px solid var(--border)}
+.cl-item{display:flex;align-items:center;gap:5px;font-size:10px;
+  font-family:var(--mono);color:var(--text3)}
+.cl-swatch{width:24px;height:3px;border-radius:2px;flex-shrink:0}
+.cl-swatch.dashed{background:none;border-top:3px dashed;border-top-color:inherit;width:20px;height:0;border-radius:0}
+
 /* Charts */
 .main-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 .card{background:var(--surface);border:1px solid var(--border);
@@ -343,13 +351,8 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);min-hei
     <div class="atab" onclick="setRelAxis('z',this)">Z</div>
     <div class="atab" onclick="setRelAxis('r',this)">Resultant</div>
   </div>
-  <div class="chart-wrap" style="height:200px"><canvas id="ch-rel"></canvas></div>
-  <div class="leg-row">
-    <div class="leg"><div class="leg-line" style="background:rgba(124,58,237,.85)"></div>X rel (raw)</div>
-    <div class="leg"><div class="leg-line" style="background:rgba(29,78,216,.85)"></div>Y rel (raw)</div>
-    <div class="leg"><div class="leg-line" style="background:rgba(22,101,52,.85)"></div>Z rel (raw)</div>
-    <div class="leg"><div class="leg-dash" style="border-color:rgba(124,58,237,.5)"></div>Resultant</div>
-  </div>
+  <div class="chart-wrap" style="height:230px"><canvas id="ch-rel"></canvas></div>
+
 </div>
 
 <!-- Per-floor charts -->
@@ -357,24 +360,24 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);min-hei
   <div class="card ground-c">
     <div class="card-title">Ground floor — raw acceleration</div>
     <div class="card-sub" id="gnd-a-sub">Waiting…</div>
-    <div class="chart-wrap" style="height:150px"><canvas id="ch-gnd-a"></canvas></div>
+    <div class="chart-wrap" style="height:180px"><canvas id="ch-gnd-a"></canvas></div>
   </div>
   <div class="card" style="border-left-color:var(--raw)">
     <div class="card-title">Top floor — raw acceleration</div>
     <div class="card-sub" id="top-a-sub">Waiting…</div>
-    <div class="chart-wrap" style="height:150px"><canvas id="ch-top-a"></canvas></div>
+    <div class="chart-wrap" style="height:180px"><canvas id="ch-top-a"></canvas></div>
   </div>
 </div>
 <div class="main-grid">
   <div class="card ground-c">
     <div class="card-title">Ground floor — displacement (raw, integrated)</div>
     <div class="card-sub" id="gnd-d-sub">Waiting…</div>
-    <div class="chart-wrap" style="height:150px"><canvas id="ch-gnd-d"></canvas></div>
+    <div class="chart-wrap" style="height:180px"><canvas id="ch-gnd-d"></canvas></div>
   </div>
   <div class="card" style="border-left-color:var(--raw)">
     <div class="card-title">Top floor — displacement (raw, integrated)</div>
     <div class="card-sub" id="top-d-sub">Waiting…</div>
-    <div class="chart-wrap" style="height:150px"><canvas id="ch-top-d"></canvas></div>
+    <div class="chart-wrap" style="height:180px"><canvas id="ch-top-d"></canvas></div>
   </div>
 </div>
 
@@ -544,29 +547,72 @@ function updateHero(rx, ry, rz, rr) {
 }
 
 let charts = {};
-function mkLine(data, color, dash) {
-  return {data, borderColor:color, borderWidth:1.2, pointRadius:0, fill:false, tension:0.3, borderDash:dash||[]};
+function mkLine(data, color, dash, label) {
+  return {data, borderColor:color, borderWidth:1.2, pointRadius:0, fill:false,
+          tension:0.3, borderDash:dash||[], label:label||'', backgroundColor:color};
 }
 function mkChart(id, yLabel, datasets) {
   const ctx = document.getElementById(id).getContext('2d');
   charts[id] = new Chart(ctx, {
     type:'line', data:{labels:[],datasets},
     options:{responsive:true, maintainAspectRatio:false, animation:false,
-      plugins:{legend:{display:false}},
+      plugins:{
+        legend:{
+          display:true,
+          position:'bottom',
+          align:'start',
+          labels:{
+            font:{size:10,family:'IBM Plex Mono'},
+            color:'#7a6f63',
+            boxWidth:24,
+            boxHeight:3,
+            padding:10,
+            usePointStyle:false
+          }
+        }
+      },
       scales:{
-        x:{display:false},
-        y:{title:{display:true,text:yLabel,font:{size:9,family:'IBM Plex Mono'},color:'#7a6f63'},
-           grid:{color:'rgba(0,0,0,0.05)'},
-           ticks:{color:'#7a6f63',font:{size:9,family:'IBM Plex Mono'}}}
+        x:{
+          display:true,
+          title:{display:true,text:'sample index',font:{size:9,family:'IBM Plex Mono'},color:'#a89f96'},
+          grid:{color:'rgba(0,0,0,0.04)'},
+          ticks:{color:'#a89f96',font:{size:8,family:'IBM Plex Mono'},maxTicksLimit:8}
+        },
+        y:{
+          title:{display:true,text:yLabel,font:{size:9,family:'IBM Plex Mono'},color:'#7a6f63'},
+          grid:{color:'rgba(0,0,0,0.05)'},
+          ticks:{color:'#7a6f63',font:{size:9,family:'IBM Plex Mono'}}
+        }
       }}
   });
 }
 function initCharts() {
-  mkChart('ch-rel',  'mm',   [mkLine([],  'rgba(124,58,237,.85)'), mkLine([], 'rgba(29,78,216,.85)'), mkLine([], 'rgba(22,101,52,.85)'), mkLine([], 'rgba(124,58,237,.5)',[4,4])]);
-  mkChart('ch-gnd-a','m/s²', [mkLine([],  'rgba(29,78,216,.8)'),   mkLine([], 'rgba(22,101,52,.7)'),  mkLine([], 'rgba(124,58,237,.7)')]);
-  mkChart('ch-top-a','m/s²', [mkLine([],  'rgba(124,58,237,.85)'), mkLine([], 'rgba(29,78,216,.7)'),  mkLine([], 'rgba(22,101,52,.7)')]);
-  mkChart('ch-gnd-d','mm',   [mkLine([],  'rgba(29,78,216,.8)'),   mkLine([], 'rgba(22,101,52,.7)'),  mkLine([], 'rgba(124,58,237,.7)')]);
-  mkChart('ch-top-d','mm',   [mkLine([],  'rgba(124,58,237,.85)'), mkLine([], 'rgba(29,78,216,.7)'),  mkLine([], 'rgba(22,101,52,.7)')]);
+  mkChart('ch-rel',  'displacement (mm)',   [
+    mkLine([], 'rgba(124,58,237,.85)', [], 'X  relative'),
+    mkLine([], 'rgba(29,78,216,.85)',  [], 'Y  relative'),
+    mkLine([], 'rgba(22,101,52,.85)',  [], 'Z  relative'),
+    mkLine([], 'rgba(124,58,237,.5)',  [4,4], 'Resultant')
+  ]);
+  mkChart('ch-gnd-a','acceleration (m/s²)', [
+    mkLine([], 'rgba(29,78,216,.8)',  [], 'X  axis'),
+    mkLine([], 'rgba(22,101,52,.7)', [], 'Y  axis'),
+    mkLine([], 'rgba(124,58,237,.7)',[], 'Z  axis')
+  ]);
+  mkChart('ch-top-a','acceleration (m/s²)', [
+    mkLine([], 'rgba(124,58,237,.85)',[], 'X  axis'),
+    mkLine([], 'rgba(29,78,216,.7)',  [], 'Y  axis'),
+    mkLine([], 'rgba(22,101,52,.7)', [], 'Z  axis')
+  ]);
+  mkChart('ch-gnd-d','displacement (mm)', [
+    mkLine([], 'rgba(29,78,216,.8)',  [], 'X  axis'),
+    mkLine([], 'rgba(22,101,52,.7)', [], 'Y  axis'),
+    mkLine([], 'rgba(124,58,237,.7)',[], 'Z  axis')
+  ]);
+  mkChart('ch-top-d','displacement (mm)', [
+    mkLine([], 'rgba(124,58,237,.85)',[], 'X  axis'),
+    mkLine([], 'rgba(29,78,216,.7)',  [], 'Y  axis'),
+    mkLine([], 'rgba(22,101,52,.7)', [], 'Z  axis')
+  ]);
 }
 function setData(id, sets) {
   const c=charts[id]; if(!c) return;
