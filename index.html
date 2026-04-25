@@ -136,14 +136,6 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);min-hei
 .buf-bar{height:100%;background:var(--green);width:0%;transition:width .5s;border-radius:2px}
 .buf-bar.warn{background:var(--amber)}
 
-/* Chart legend */
-.chart-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;padding-top:7px;
-  border-top:1px solid var(--border)}
-.cl-item{display:flex;align-items:center;gap:5px;font-size:10px;
-  font-family:var(--mono);color:var(--text3)}
-.cl-swatch{width:24px;height:3px;border-radius:2px;flex-shrink:0}
-.cl-swatch.dashed{background:none;border-top:3px dashed;border-top-color:inherit;width:20px;height:0;border-radius:0}
-
 /* Charts */
 .main-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 .card{background:var(--surface);border:1px solid var(--border);
@@ -183,11 +175,6 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);min-hei
 .le.ground .lt{color:var(--blue)}
 .le.top .lt{color:var(--raw)}
 
-.leg-row{display:flex;gap:12px;margin-top:8px;padding-top:6px;border-top:1px solid var(--border);flex-wrap:wrap}
-.leg{display:flex;align-items:center;gap:5px;font-size:9px;font-family:var(--mono);color:var(--text3)}
-.leg-line{width:14px;height:2px;border-radius:1px}
-.leg-dash{width:14px;height:0;border-top:2px dashed}
-
 .alert-bar{display:none;border-radius:var(--r);padding:8px 14px;font-size:12px;
   font-family:var(--mono);margin-bottom:12px}
 .alert-bar.show{display:block;background:var(--raw-dim);color:var(--raw);border:1px solid var(--raw-b)}
@@ -208,7 +195,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);min-hei
   </div>
   <div>
     <div class="topbar-title">ERI Raw Monitor — Inter-Story Drift <span class="raw-badge"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="5" r="3.5"/><path d="M5 3v2l1.5 1"/></svg> RAW · NO CALIBRATION</span></div>
-    <div class="topbar-sub">ADXL355 RAW OUTPUT × 2 · ESP32-WROOM32 · HIVEMQ · CTU DEPT. OF ELECTRONICS ENGINEERING</div>
+    <div class="topbar-sub">ADXL355 RAW OUTPUT × 2 · ESP32-WROOM32 · HIVEMQ CLOUD · CTU DEPT. OF ELECTRONICS ENGINEERING</div>
   </div>
   <div class="topbar-right">
     <div class="conn-badge"><div class="conn-dot disconnected" id="cdot"></div><span id="clabel">Disconnected</span></div>
@@ -226,13 +213,28 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);min-hei
 
 <!-- Connection -->
 <div class="conn-panel">
-  <div class="cp-title">HiveMQ Cloud connection — raw topic</div>
+  <div class="cp-title">HiveMQ Cloud connection</div>
   <div class="conn-grid">
-    <div class="cf"><label>Broker host</label><input id="cfg-host" placeholder="abc123.s1.eu.hivemq.cloud"></div>
-    <div class="cf"><label>WSS port</label><input type="number" id="cfg-port" value="8884"></div>
-    <div class="cf"><label>Username</label><input id="cfg-user"></div>
-    <div class="cf"><label>Password</label><input type="password" id="cfg-pass"></div>
-    <div class="cf"><label>Topic prefix</label><input id="cfg-topic" value="eri-raw"></div>
+    <div class="cf">
+      <label>Broker host</label>
+      <input id="cfg-host" value="573ccf5fbaa24a14be6b4d0f4613c054.s1.eu.hivemq.cloud">
+    </div>
+    <div class="cf">
+      <label>WSS port</label>
+      <input type="number" id="cfg-port" value="8884">
+    </div>
+    <div class="cf">
+      <label>Username</label>
+      <input id="cfg-user" value="eridisplacement">
+    </div>
+    <div class="cf">
+      <label>Password</label>
+      <input type="password" id="cfg-pass" value="Eri12345">
+    </div>
+    <div class="cf">
+      <label>Topic prefix</label>
+      <input id="cfg-topic" value="eri-raw">
+    </div>
   </div>
   <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
     <button class="btn btn-raw" id="btn-conn" onclick="toggleConnect()">Connect</button>
@@ -247,7 +249,9 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);min-hei
       </select>
     </label>
   </div>
-  <div class="conn-hint">Topic prefix must match MQTT_PREFIX in ERI_Raw_MQTT.ino (default: <strong>eri-raw</strong>)</div>
+  <div class="conn-hint">
+    Broker: <strong>573ccf5fbaa24a14be6b4d0f4613c054.s1.eu.hivemq.cloud</strong> · WSS port: <strong>8884</strong> · Topic prefix must match <strong>MQTT_PREFIX</strong> in firmware (default: <strong>eri-raw</strong>)
+  </div>
 </div>
 
 <!-- Device status -->
@@ -352,7 +356,6 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);min-hei
     <div class="atab" onclick="setRelAxis('r',this)">Resultant</div>
   </div>
   <div class="chart-wrap" style="height:230px"><canvas id="ch-rel"></canvas></div>
-
 </div>
 
 <!-- Per-floor charts -->
@@ -406,7 +409,7 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--sans);min-hei
 
 <div class="footer">
   <p>ERI RAW MONITOR · UNCALIBRATED · ADXL355 + ESP32-WROOM32 × 2 · HIVEMQ CLOUD</p>
-  <p>Cebu Technological University · Department of Electronics Engineering · Topic prefix: eri-raw</p>
+  <p>Cebu Technological University · Department of Electronics Engineering · Broker: 573ccf5fbaa24a14be6b4d0f4613c054.s1.eu.hivemq.cloud · Topic prefix: eri-raw</p>
 </div>
 
 </div>
@@ -437,65 +440,92 @@ function toggleConnect() {
     document.getElementById('btn-conn').textContent = 'Connect';
     return;
   }
-  const host = document.getElementById('cfg-host').value.trim();
-  const port = parseInt(document.getElementById('cfg-port').value) || 8884;
-  const user = document.getElementById('cfg-user').value.trim();
-  const pass = document.getElementById('cfg-pass').value;
-  const pfx  = document.getElementById('cfg-topic').value.trim() || 'eri-raw';
+  const host  = document.getElementById('cfg-host').value.trim();
+  const port  = parseInt(document.getElementById('cfg-port').value) || 8884;
+  const user  = document.getElementById('cfg-user').value.trim();
+  const pass  = document.getElementById('cfg-pass').value;
+  const pfx   = document.getElementById('cfg-topic').value.trim() || 'eri-raw';
+
   if (!host) { showAlert('Enter the HiveMQ broker host.','err'); return; }
+
   setConnState('connecting');
   document.getElementById('btn-conn').textContent = 'Connecting…';
-  addLog('Connecting to wss://'+host+':'+port+'…','info','');
+  addLog('Connecting to wss://'+host+':'+port+' …','info','');
   if (mqttClient) { try { mqttClient.end(true); } catch(e){} }
+
   mqttClient = mqtt.connect('wss://'+host+':'+port+'/mqtt', {
-    clientId:'eri-raw-web-'+Math.random().toString(16).slice(2,8),
-    username:user||undefined, password:pass||undefined,
-    clean:true, reconnectPeriod:5000, connectTimeout:10000
+    clientId   : 'eri-raw-web-'+Math.random().toString(16).slice(2,8),
+    username   : user || undefined,
+    password   : pass || undefined,
+    clean      : true,
+    reconnectPeriod : 5000,
+    connectTimeout  : 10000
   });
+
   mqttClient.on('connect', () => {
     setConnState('connected');
     document.getElementById('btn-conn').textContent = 'Disconnect';
-    addLog('Connected.','ok',''); hideAlert();
-    [pfx+'/ground/live',pfx+'/ground/window',pfx+'/ground/status',
-     pfx+'/top/live',   pfx+'/top/window',   pfx+'/top/status']
-      .forEach(t => mqttClient.subscribe(t,{qos:0}, err => {
-        if (!err) addLog('↳ '+t,'ok',''); else addLog('Sub failed: '+t,'err','');
+    addLog('Connected to HiveMQ Cloud.','ok','');
+    hideAlert();
+    [pfx+'/ground/live', pfx+'/ground/window', pfx+'/ground/status',
+     pfx+'/top/live',    pfx+'/top/window',    pfx+'/top/status']
+      .forEach(t => mqttClient.subscribe(t, {qos:0}, err => {
+        if (!err) addLog('↳ subscribed: '+t,'ok','');
+        else addLog('Sub failed: '+t,'err','');
       }));
   });
-  mqttClient.on('error',     e  => { setConnState('error'); addLog('Error: '+e.message,'err',''); showAlert(e.message,'err'); document.getElementById('btn-conn').textContent='Connect'; });
-  mqttClient.on('close',     () => { if(connState!=='disconnected'){ setConnState('disconnected'); addLog('Closed.','warn',''); document.getElementById('btn-conn').textContent='Connect'; }});
-  mqttClient.on('reconnect', () => { setConnState('connecting'); addLog('Reconnecting…','warn',''); });
+
+  mqttClient.on('error',     e  => {
+    setConnState('error');
+    addLog('Error: '+e.message,'err','');
+    showAlert(e.message,'err');
+    document.getElementById('btn-conn').textContent = 'Connect';
+  });
+  mqttClient.on('close',     () => {
+    if (connState !== 'disconnected') {
+      setConnState('disconnected');
+      addLog('Connection closed.','warn','');
+      document.getElementById('btn-conn').textContent = 'Connect';
+    }
+  });
+  mqttClient.on('reconnect', () => {
+    setConnState('connecting');
+    addLog('Reconnecting…','warn','');
+  });
   mqttClient.on('message', (topic, payload) => {
     document.getElementById('last-rx').textContent = 'Last: '+new Date().toLocaleTimeString();
     try {
-      const d = JSON.parse(payload.toString());
+      const d     = JSON.parse(payload.toString());
       const floor = topic.includes('/ground/') ? 'ground' : 'top';
       const type  = topic.split('/').pop();
-      if      (type==='live')   handleLive(floor, d);
-      else if (type==='window') handleWindow(floor, d);
-      else if (type==='status') addLog('[ESP32/'+floor.toUpperCase()+'] '+(d.msg||'heartbeat'),'info',floor);
+      if      (type === 'live')   handleLive(floor, d);
+      else if (type === 'window') handleWindow(floor, d);
+      else if (type === 'status') addLog('[ESP32/'+floor.toUpperCase()+'] '+(d.msg||'heartbeat'),'info',floor);
     } catch(e) { addLog('Parse error: '+e.message,'err',''); }
   });
 }
 
-function pushC(arr, val) { arr.push(val); if(arr.length > MAX_CHART_PTS) arr.shift(); }
+function pushC(arr, val) { arr.push(val); if (arr.length > MAX_CHART_PTS) arr.shift(); }
 
 function handleLive(floor, d) {
-  const f = chart[floor];
+  const f   = chart[floor];
   f.last = d; f.n++;
   const limit = bufLimit();
-  // Raw fields: ax/ay/az (not ax_cal)
   const ax = d.ax ?? 0, ay = d.ay ?? 0, az = d.az ?? 0;
   const row = [d.ts??0, ax, ay, az, d.vx??0, d.vy??0, d.vz??0, d.dx??0, d.dy??0, d.dz??0];
   if (dataBuf[floor].length < limit) dataBuf[floor].push(row);
 
   pushC(f.ax, ax); pushC(f.ay, ay); pushC(f.az, az);
-  pushC(f.dx, (d.dx??0)*1000); pushC(f.dy, (d.dy??0)*1000); pushC(f.dz, (d.dz??0)*1000);
+  pushC(f.dx, (d.dx??0)*1000);
+  pushC(f.dy, (d.dy??0)*1000);
+  pushC(f.dz, (d.dz??0)*1000);
 
+  // Activity dot
   const dot = document.getElementById(floor==='ground'?'gnd-dot':'top-dot');
   dot.className = 'dev-dot live';
-  clearTimeout(dot._t); dot._t = setTimeout(()=>{dot.className='dev-dot';},2000);
+  clearTimeout(dot._t); dot._t = setTimeout(()=>{ dot.className='dev-dot'; }, 2000);
 
+  // Sub-label
   const sub = document.getElementById(floor==='ground'?'gnd-sub':'top-sub');
   sub.textContent = 'ax(raw)='+ax.toFixed(4)+'  dx='+((d.dx??0)*1000).toFixed(4)+' mm  n='+f.n;
   const px = floor==='ground'?'gnd':'top';
@@ -503,30 +533,35 @@ function handleLive(floor, d) {
   document.getElementById(px+'-dy').textContent = ((d.dy??0)*1000).toFixed(3);
   document.getElementById(px+'-dz').textContent = ((d.dz??0)*1000).toFixed(3);
 
+  // Relative displacement (requires both floors)
   if (chart.ground.last && chart.top.last) {
     const g = chart.ground.last, t = chart.top.last;
     const rx = (t.dx-g.dx)*1000, ry = (t.dy-g.dy)*1000, rz = (t.dz-g.dz)*1000;
     const rr = Math.sqrt(rx*rx+ry*ry+rz*rz);
     pushC(rel.x, rx); pushC(rel.y, ry); pushC(rel.z, rz); pushC(rel.r, rr);
-    if (relBuf.length < limit) relBuf.push([d.ts??0, +rx.toFixed(6), +ry.toFixed(6), +rz.toFixed(6), +rr.toFixed(6)]);
+    if (relBuf.length < limit)
+      relBuf.push([d.ts??0, +rx.toFixed(6), +ry.toFixed(6), +rz.toFixed(6), +rr.toFixed(6)]);
     updateHero(rx, ry, rz, rr);
     updateRelChart();
-    if (rr > 10) showAlert('⚠  High raw drift: '+rr.toFixed(3)+' mm','warn');
+    if (rr > 10) showAlert('⚠  High raw drift: '+rr.toFixed(3)+' mm resultant','warn');
     else hideAlert();
   }
+
   updateFloorCharts(floor);
   updateExportCounts();
 }
 
 function handleWindow(floor, d) {
-  addLog('Window #'+d.win+' ['+floor.toUpperCase()+'] PGD(raw)='+(d.pgd_r*1000).toFixed(3)+'mm','ok',floor);
+  addLog('Window #'+d.win+' ['+floor.toUpperCase()+'] PGD(raw)='+((d.pgd_r||0)*1000).toFixed(3)+' mm','ok',floor);
   windowStaging[floor][d.win] = d;
   const win = d.win;
   if (windowStaging.ground[win] && windowStaging.top[win]) {
     const g=windowStaging.ground[win], t=windowStaging.top[win];
-    const relX=Math.abs(t.pgd_x-g.pgd_x)*1000, relY=Math.abs(t.pgd_y-g.pgd_y)*1000, relZ=Math.abs(t.pgd_z-g.pgd_z)*1000;
+    const relX=Math.abs((t.pgd_x||0)-(g.pgd_x||0))*1000;
+    const relY=Math.abs((t.pgd_y||0)-(g.pgd_y||0))*1000;
+    const relZ=Math.abs((t.pgd_z||0)-(g.pgd_z||0))*1000;
     const relR=Math.sqrt(relX*relX+relY*relY+relZ*relZ);
-    peaksBuf.unshift({win,relX,relY,relZ,relR,gndPgd:g.pgd_r*1000,topPgd:t.pgd_r*1000,g,t});
+    peaksBuf.unshift({win,relX,relY,relZ,relR,gndPgd:(g.pgd_r||0)*1000,topPgd:(t.pgd_r||0)*1000,g,t});
     if (peaksBuf.length > 100) peaksBuf.pop();
     delete windowStaging.ground[win]; delete windowStaging.top[win];
     renderPeaksTable(); updateExportCounts();
@@ -534,95 +569,86 @@ function handleWindow(floor, d) {
 }
 
 function updateHero(rx, ry, rz, rr) {
-  const cls = rr>5?'hero-val alert':rr<0.5?'hero-val ok':'hero-val';
+  const cls = rr>5 ? 'hero-val alert' : rr<0.5 ? 'hero-val ok' : 'hero-val';
   [['h-rx',rx],['h-ry',ry],['h-rz',rz],['h-rr',rr]].forEach(([id,v])=>{
     document.getElementById(id).textContent = v.toFixed(4);
-    document.getElementById(id).className = cls;
+    document.getElementById(id).className   = cls;
   });
   const pct = Math.min(100,(rr/10)*100);
   const bar = document.getElementById('drift-bar');
   bar.style.width = pct+'%';
-  bar.className = 'drift-bar'+(pct>80?' danger':pct>50?' warn':'');
+  bar.className   = 'drift-bar'+(pct>80?' danger':pct>50?' warn':'');
   document.getElementById('drift-pct').textContent = rr.toFixed(4)+' mm';
 }
 
+// ── Charts ────────────────────────────────────────────────────────────────
 let charts = {};
 function mkLine(data, color, dash, label) {
-  return {data, borderColor:color, borderWidth:1.2, pointRadius:0, fill:false,
-          tension:0.3, borderDash:dash||[], label:label||'', backgroundColor:color};
+  return { data, borderColor:color, borderWidth:1.2, pointRadius:0, fill:false,
+           tension:0.3, borderDash:dash||[], label:label||'', backgroundColor:color };
 }
 function mkChart(id, yLabel, datasets) {
   const ctx = document.getElementById(id).getContext('2d');
   charts[id] = new Chart(ctx, {
     type:'line', data:{labels:[],datasets},
-    options:{responsive:true, maintainAspectRatio:false, animation:false,
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:false,
       plugins:{
         legend:{
-          display:true,
-          position:'bottom',
-          align:'start',
-          labels:{
-            font:{size:10,family:'IBM Plex Mono'},
-            color:'#7a6f63',
-            boxWidth:24,
-            boxHeight:3,
-            padding:10,
-            usePointStyle:false
-          }
+          display:true, position:'bottom', align:'start',
+          labels:{ font:{size:10,family:'IBM Plex Mono'}, color:'#7a6f63',
+                   boxWidth:24, boxHeight:3, padding:10, usePointStyle:false }
         }
       },
       scales:{
-        x:{
-          display:true,
-          title:{display:true,text:'sample index',font:{size:9,family:'IBM Plex Mono'},color:'#a89f96'},
-          grid:{color:'rgba(0,0,0,0.04)'},
-          ticks:{color:'#a89f96',font:{size:8,family:'IBM Plex Mono'},maxTicksLimit:8}
-        },
-        y:{
-          title:{display:true,text:yLabel,font:{size:9,family:'IBM Plex Mono'},color:'#7a6f63'},
-          grid:{color:'rgba(0,0,0,0.05)'},
-          ticks:{color:'#7a6f63',font:{size:9,family:'IBM Plex Mono'}}
-        }
-      }}
+        x:{ display:true,
+            title:{display:true,text:'sample index',font:{size:9,family:'IBM Plex Mono'},color:'#a89f96'},
+            grid:{color:'rgba(0,0,0,0.04)'},
+            ticks:{color:'#a89f96',font:{size:8,family:'IBM Plex Mono'},maxTicksLimit:8} },
+        y:{ title:{display:true,text:yLabel,font:{size:9,family:'IBM Plex Mono'},color:'#7a6f63'},
+            grid:{color:'rgba(0,0,0,0.05)'},
+            ticks:{color:'#7a6f63',font:{size:9,family:'IBM Plex Mono'}} }
+      }
+    }
   });
 }
 function initCharts() {
-  mkChart('ch-rel',  'displacement (mm)',   [
-    mkLine([], 'rgba(124,58,237,.85)', [], 'X  relative'),
-    mkLine([], 'rgba(29,78,216,.85)',  [], 'Y  relative'),
-    mkLine([], 'rgba(22,101,52,.85)',  [], 'Z  relative'),
-    mkLine([], 'rgba(124,58,237,.5)',  [4,4], 'Resultant')
+  mkChart('ch-rel',   'displacement (mm)',   [
+    mkLine([],'rgba(124,58,237,.85)',[],'X  relative'),
+    mkLine([],'rgba(29,78,216,.85)', [],'Y  relative'),
+    mkLine([],'rgba(22,101,52,.85)', [],'Z  relative'),
+    mkLine([],'rgba(124,58,237,.5)',[4,4],'Resultant')
   ]);
   mkChart('ch-gnd-a','acceleration (m/s²)', [
-    mkLine([], 'rgba(29,78,216,.8)',  [], 'X  axis'),
-    mkLine([], 'rgba(22,101,52,.7)', [], 'Y  axis'),
-    mkLine([], 'rgba(124,58,237,.7)',[], 'Z  axis')
+    mkLine([],'rgba(29,78,216,.8)', [],'X  axis'),
+    mkLine([],'rgba(22,101,52,.7)',[],'Y  axis'),
+    mkLine([],'rgba(124,58,237,.7)',[],'Z  axis')
   ]);
   mkChart('ch-top-a','acceleration (m/s²)', [
-    mkLine([], 'rgba(124,58,237,.85)',[], 'X  axis'),
-    mkLine([], 'rgba(29,78,216,.7)',  [], 'Y  axis'),
-    mkLine([], 'rgba(22,101,52,.7)', [], 'Z  axis')
+    mkLine([],'rgba(124,58,237,.85)',[],'X  axis'),
+    mkLine([],'rgba(29,78,216,.7)',  [],'Y  axis'),
+    mkLine([],'rgba(22,101,52,.7)', [],'Z  axis')
   ]);
   mkChart('ch-gnd-d','displacement (mm)', [
-    mkLine([], 'rgba(29,78,216,.8)',  [], 'X  axis'),
-    mkLine([], 'rgba(22,101,52,.7)', [], 'Y  axis'),
-    mkLine([], 'rgba(124,58,237,.7)',[], 'Z  axis')
+    mkLine([],'rgba(29,78,216,.8)', [],'X  axis'),
+    mkLine([],'rgba(22,101,52,.7)',[],'Y  axis'),
+    mkLine([],'rgba(124,58,237,.7)',[],'Z  axis')
   ]);
   mkChart('ch-top-d','displacement (mm)', [
-    mkLine([], 'rgba(124,58,237,.85)',[], 'X  axis'),
-    mkLine([], 'rgba(29,78,216,.7)',  [], 'Y  axis'),
-    mkLine([], 'rgba(22,101,52,.7)', [], 'Z  axis')
+    mkLine([],'rgba(124,58,237,.85)',[],'X  axis'),
+    mkLine([],'rgba(29,78,216,.7)',  [],'Y  axis'),
+    mkLine([],'rgba(22,101,52,.7)', [],'Z  axis')
   ]);
 }
 function setData(id, sets) {
-  const c=charts[id]; if(!c) return;
-  const n=Math.max(...sets.map(s=>s.length));
-  c.data.labels=Array.from({length:n},(_,i)=>i);
-  sets.forEach((s,i)=>{c.data.datasets[i].data=s;});
+  const c = charts[id]; if (!c) return;
+  const n = Math.max(...sets.map(s=>s.length));
+  c.data.labels = Array.from({length:n},(_,i)=>i);
+  sets.forEach((s,i) => { c.data.datasets[i].data = s; });
   c.update('none');
 }
 function updateRelChart() {
-  const none=[];
+  const none = [];
   if      (relAxis==='x') setData('ch-rel',[rel.x,none,none,none]);
   else if (relAxis==='y') setData('ch-rel',[none,rel.y,none,none]);
   else if (relAxis==='z') setData('ch-rel',[none,none,rel.z,none]);
@@ -630,25 +656,29 @@ function updateRelChart() {
   else                    setData('ch-rel',[rel.x,rel.y,rel.z,rel.r]);
 }
 function updateFloorCharts(floor) {
-  const f=chart[floor];
+  const f = chart[floor];
   if (floor==='ground') {
-    setData('ch-gnd-a',[f.ax,f.ay,f.az]); setData('ch-gnd-d',[f.dx,f.dy,f.dz]);
-    document.getElementById('gnd-a-sub').textContent='ax(raw)='+(f.ax.at(-1)??0).toFixed(5)+'  ay='+(f.ay.at(-1)??0).toFixed(5)+' m/s²';
-    document.getElementById('gnd-d-sub').textContent='dx='+(f.dx.at(-1)??0).toFixed(5)+'  dy='+(f.dy.at(-1)??0).toFixed(5)+' mm';
+    setData('ch-gnd-a',[f.ax,f.ay,f.az]);
+    setData('ch-gnd-d',[f.dx,f.dy,f.dz]);
+    document.getElementById('gnd-a-sub').textContent = 'ax(raw)='+(f.ax.at(-1)??0).toFixed(5)+'  ay='+(f.ay.at(-1)??0).toFixed(5)+' m/s²';
+    document.getElementById('gnd-d-sub').textContent = 'dx='+(f.dx.at(-1)??0).toFixed(5)+'  dy='+(f.dy.at(-1)??0).toFixed(5)+' mm';
   } else {
-    setData('ch-top-a',[f.ax,f.ay,f.az]); setData('ch-top-d',[f.dx,f.dy,f.dz]);
-    document.getElementById('top-a-sub').textContent='ax(raw)='+(f.ax.at(-1)??0).toFixed(5)+'  ay='+(f.ay.at(-1)??0).toFixed(5)+' m/s²';
-    document.getElementById('top-d-sub').textContent='dx='+(f.dx.at(-1)??0).toFixed(5)+'  dy='+(f.dy.at(-1)??0).toFixed(5)+' mm';
+    setData('ch-top-a',[f.ax,f.ay,f.az]);
+    setData('ch-top-d',[f.dx,f.dy,f.dz]);
+    document.getElementById('top-a-sub').textContent = 'ax(raw)='+(f.ax.at(-1)??0).toFixed(5)+'  ay='+(f.ay.at(-1)??0).toFixed(5)+' m/s²';
+    document.getElementById('top-d-sub').textContent = 'dx='+(f.dx.at(-1)??0).toFixed(5)+'  dy='+(f.dy.at(-1)??0).toFixed(5)+' mm';
   }
 }
 function setRelAxis(ax, el) {
-  relAxis=ax;
+  relAxis = ax;
   el.closest('.card').querySelectorAll('.atab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active'); updateRelChart();
+  el.classList.add('active');
+  updateRelChart();
 }
 
+// ── Export ────────────────────────────────────────────────────────────────
 function updateExportCounts() {
-  const limit=bufLimit();
+  const limit = bufLimit();
   const gn=dataBuf.ground.length, tn=dataBuf.top.length, rn=relBuf.length, pn=peaksBuf.length;
   document.getElementById('cnt-gnd').textContent   = gn.toLocaleString()+' rows';
   document.getElementById('cnt-top').textContent   = tn.toLocaleString()+' rows';
@@ -657,22 +687,20 @@ function updateExportCounts() {
   const pct = n => limit===Infinity ? Math.min(100,n/1000) : Math.min(100,(n/limit)*100);
   ['gnd','top','rel'].forEach((k,i) => {
     const n=[gn,tn,rn][i];
-    document.getElementById('bar-'+k).style.width=pct(n)+'%';
-    document.getElementById('bar-'+k).className='buf-bar'+(pct(n)>90?' warn':'');
+    document.getElementById('bar-'+k).style.width = pct(n)+'%';
+    document.getElementById('bar-'+k).className   = 'buf-bar'+(pct(n)>90?' warn':'');
   });
-  document.getElementById('bar-peaks').style.width=Math.min(100,pn*2)+'%';
-  document.getElementById('dl-gnd').disabled   = gn<1;
-  document.getElementById('dl-top').disabled   = tn<1;
-  document.getElementById('dl-rel').disabled   = rn<1;
-  document.getElementById('dl-peaks').disabled = pn<1;
+  document.getElementById('bar-peaks').style.width = Math.min(100,pn*2)+'%';
+  document.getElementById('dl-gnd').disabled   = gn < 1;
+  document.getElementById('dl-top').disabled   = tn < 1;
+  document.getElementById('dl-rel').disabled   = rn < 1;
+  document.getElementById('dl-peaks').disabled = pn < 1;
 }
-
 function downloadCSV(filename, header, rows) {
   const blob = new Blob([[header,...rows].join('\n')],{type:'text/csv'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
   URL.revokeObjectURL(a.href);
 }
-
 function exportCSV(type) {
   const ts = new Date().toISOString().slice(0,19).replace(/[T:]/g,'-');
   if (type==='ground'||type==='top') {
@@ -692,10 +720,9 @@ function exportCSV(type) {
     addLog(`Exported ${relBuf.length} rows → ERI_RAW_relative_displacement_${ts}.csv`,'ok','');
   }
 }
-
 function exportPeaksCSV() {
   const ts = new Date().toISOString().slice(0,19).replace(/[T:]/g,'-');
-  const header=[
+  const header = [
     'window,n_gnd,n_top,duration_s',
     'gnd_pga_x_ms2,gnd_pga_y_ms2,gnd_pga_z_ms2,gnd_pga_r_ms2',
     'gnd_pgv_r_ms,gnd_pgd_x_m,gnd_pgd_y_m,gnd_pgd_z_m,gnd_pgd_r_m',
@@ -706,9 +733,9 @@ function exportPeaksCSV() {
     'rel_pgd_x_mm,rel_pgd_y_mm,rel_pgd_z_mm,rel_pgd_resultant_mm'
   ].join(',');
   const rows=[...peaksBuf].reverse().map(p=>{
-    const g=p.g,t=p.t;
+    const g=p.g, t=p.t;
     return [
-      p.win,g.n||'',t.n||'',g.dur||'',
+      p.win, g.n||'', t.n||'', g.dur||'',
       (g.pga_x||0).toFixed(6),(g.pga_y||0).toFixed(6),(g.pga_z||0).toFixed(6),(g.pga_r||0).toFixed(6),
       (g.pgv_r||0).toFixed(6),(g.pgd_x||0).toFixed(7),(g.pgd_y||0).toFixed(7),(g.pgd_z||0).toFixed(7),(g.pgd_r||0).toFixed(7),
       ((g.pgd_x||0)*1000).toFixed(4),((g.pgd_y||0)*1000).toFixed(4),((g.pgd_z||0)*1000).toFixed(4),((g.pgd_r||0)*1000).toFixed(4),
@@ -718,17 +745,20 @@ function exportPeaksCSV() {
       p.relX.toFixed(4),p.relY.toFixed(4),p.relZ.toFixed(4),p.relR.toFixed(4)
     ].join(',');
   });
-  const blob=new Blob([[header,...rows].join('\n')],{type:'text/csv'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  const blob = new Blob([[header,...rows].join('\n')],{type:'text/csv'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download=`ERI_RAW_peaks_report_${ts}.csv`; a.click(); URL.revokeObjectURL(a.href);
   addLog(`Exported ${rows.length} windows → ERI_RAW_peaks_report_${ts}.csv`,'ok','');
 }
 
 function renderPeaksTable() {
-  const tbody=document.getElementById('peaks-body');
-  if (!peaksBuf.length) { tbody.innerHTML='<tr class="empty"><td colspan="7">Waiting…</td></tr>'; return; }
-  tbody.innerHTML=peaksBuf.map(p=>{
-    const hi=p.relR>5;
+  const tbody = document.getElementById('peaks-body');
+  if (!peaksBuf.length) {
+    tbody.innerHTML='<tr class="empty"><td colspan="7">Waiting for both floors to complete a window…</td></tr>';
+    return;
+  }
+  tbody.innerHTML = peaksBuf.map(p => {
+    const hi = p.relR > 5;
     return `<tr>
       <td class="num">#${p.win}</td>
       <td class="${hi?'hi':''}">${p.relX.toFixed(4)}</td>
@@ -745,11 +775,15 @@ function clearAll() {
   dataBuf.ground.length=0; dataBuf.top.length=0;
   relBuf.length=0; peaksBuf.length=0;
   ['ground','top'].forEach(f=>{
-    ['ax','ay','az','dx','dy','dz'].forEach(k=>{chart[f][k]=[];});
+    ['ax','ay','az','dx','dy','dz'].forEach(k=>{ chart[f][k]=[]; });
     chart[f].last=null; chart[f].n=0;
   });
   rel.x=[]; rel.y=[]; rel.z=[]; rel.r=[];
-  Object.values(charts).forEach(c=>{c.data.labels=[];c.data.datasets.forEach(d=>d.data=[]);c.update('none');});
+  Object.values(charts).forEach(c=>{
+    c.data.labels=[];
+    c.data.datasets.forEach(d=>d.data=[]);
+    c.update('none');
+  });
   ['h-rx','h-ry','h-rz','h-rr'].forEach(id=>document.getElementById(id).textContent='—');
   document.getElementById('drift-bar').style.width='0%';
   document.getElementById('drift-pct').textContent='—';
@@ -760,30 +794,31 @@ function clearAll() {
 
 function setConnState(s) {
   connState=s;
-  document.getElementById('cdot').className='conn-dot '+s;
-  document.getElementById('clabel').textContent=s.charAt(0).toUpperCase()+s.slice(1);
+  document.getElementById('cdot').className  = 'conn-dot '+s;
+  document.getElementById('clabel').textContent = s.charAt(0).toUpperCase()+s.slice(1);
 }
-function showAlert(msg,type) {
-  const el=document.getElementById('alert-bar');
-  el.textContent=msg;
-  el.className='alert-bar show'+(type==='err'?' err':'');
+function showAlert(msg, type) {
+  const el = document.getElementById('alert-bar');
+  el.textContent = msg;
+  el.className   = 'alert-bar show'+(type==='err'?' err':'');
 }
 function hideAlert() { document.getElementById('alert-bar').className='alert-bar'; }
 
-function addLog(msg,type,floor) {
-  const wrap=document.getElementById('log-wrap');
-  const ts=new Date().toLocaleTimeString('en',{hour12:false});
-  const div=document.createElement('div');
-  div.className='le'+(type==='err'?' err':type==='ok'?' ok':type==='warn'?' warn':'')
+function addLog(msg, type, floor) {
+  const wrap = document.getElementById('log-wrap');
+  const ts   = new Date().toLocaleTimeString('en',{hour12:false});
+  const div  = document.createElement('div');
+  div.className = 'le'+(type==='err'?' err':type==='ok'?' ok':type==='warn'?' warn':'')
     +(floor==='ground'?' ground':floor==='top'?' top':'');
-  div.innerHTML=`<span class="lt">${ts}</span><span class="lm">${msg}</span>`;
+  div.innerHTML = `<span class="lt">${ts}</span><span class="lm">${msg}</span>`;
   wrap.prepend(div);
-  while(wrap.children.length>80) wrap.removeChild(wrap.lastChild);
+  while (wrap.children.length > 80) wrap.removeChild(wrap.lastChild);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  initCharts(); updateExportCounts();
-  addLog('Raw dashboard ready. Topic prefix: eri-raw','info','');
+  initCharts();
+  updateExportCounts();
+  addLog('Dashboard ready. Credentials pre-loaded. Click Connect to start.','ok','');
   renderPeaksTable();
 });
 </script>
