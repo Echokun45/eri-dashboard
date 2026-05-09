@@ -11,7 +11,7 @@
 # Deploy via CLI:
 #   npx wrangler pages deploy . --project-name eri-earthquake-dashboard
 
-name = "eri-earthquake-dashboard"
+name = "eri-dashboard"
 compatibility_date = "2026-02-13"
 
 # For Pages projects, only pages_build_output_dir is needed.
