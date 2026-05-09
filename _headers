@@ -1,5 +1,5 @@
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; connect-src 'self' wss://*.hivemq.cloud:8884; img-src 'self' data:
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; connect-src 'self' wss://df7f72e09ae84a60aa37e2f4e19c7356.s1.eu.hivemq.cloud:8884; img-src 'self' data:
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Cache-Control: no-cache, no-store, must-revalidate
